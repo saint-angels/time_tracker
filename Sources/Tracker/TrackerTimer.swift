@@ -8,7 +8,11 @@ class TrackerTimer: ObservableObject {
     @Published var dailyWorkTotal: Int = 0
     @Published var displayMinutes: String = "0m"
     @Published var displayFull: String = "0:00"
+    @Published var flashBreakReminder: Bool = false
 
+    private static let breakReminderAt = 30 * 60
+    private static let breakReminderRepeat = 5 * 60
+    private var lastFlashMinute: Int = -1
     private var startDate: Date?
     private var ticker: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -36,6 +40,7 @@ class TrackerTimer: ObservableObject {
         }
         mode = .work
         elapsedSeconds = 0
+        lastFlashMinute = -1
         startDate = Date()
         isRunning = true
         startTicker()
@@ -48,17 +53,23 @@ class TrackerTimer: ObservableObject {
         }
         mode = .break
         elapsedSeconds = 0
+        lastFlashMinute = -1
         startDate = Date()
         isRunning = true
         startTicker()
     }
 
     func reset() {
+        if mode == .work {
+            bankTime()
+        }
         ticker?.invalidate()
         ticker = nil
         startDate = nil
         isRunning = false
         elapsedSeconds = 0
+        lastFlashMinute = -1
+        mode = nil
     }
 
     private func bankTime() {
@@ -77,5 +88,16 @@ class TrackerTimer: ObservableObject {
     private func tick() {
         guard let start = startDate else { return }
         elapsedSeconds = Int(Date().timeIntervalSince(start))
+        checkBreakReminder()
+    }
+
+    private func checkBreakReminder() {
+        guard mode == .work, isRunning, elapsedSeconds >= Self.breakReminderAt else { return }
+        let pastThreshold = elapsedSeconds - Self.breakReminderAt
+        let reminderMinute = pastThreshold / Self.breakReminderRepeat
+        if reminderMinute != lastFlashMinute {
+            lastFlashMinute = reminderMinute
+            flashBreakReminder = true
+        }
     }
 }

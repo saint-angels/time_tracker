@@ -33,13 +33,25 @@ struct PopoverContentView: View {
                 .foregroundColor(.secondary)
 
             HStack(spacing: 12) {
-                Button("Work") { timer.startWork() }
-                    .buttonStyle(.borderedProminent)
-                    .tint(timer.mode == .work && timer.isRunning ? .red : .gray)
+                if timer.mode == .work && timer.isRunning {
+                    Button("Stop") { timer.reset() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.red)
+                } else {
+                    Button("Work") { timer.startWork() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.gray)
+                }
 
-                Button("Break") { timer.startBreak() }
-                    .buttonStyle(.borderedProminent)
-                    .tint(timer.mode == .break && timer.isRunning ? .green : .gray)
+                if timer.mode == .break && timer.isRunning {
+                    Button("Stop") { timer.reset() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+                } else {
+                    Button("Break") { timer.startBreak() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.gray)
+                }
             }
 
             Divider()
