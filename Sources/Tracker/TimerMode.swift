@@ -15,7 +15,7 @@ enum TimerMode {
         switch self {
         case .idle: return "Ready"
         case .work: return "Work"
-        case .break: return "Break"
+        case .break: return "Rest"
         }
     }
 
@@ -35,9 +35,9 @@ enum TimerMode {
             )
         case .break:
             return ColorScheme(
-                background: Color(red: 0.92, green: 0.90, blue: 0.86),
-                foreground: .black,
-                accent: Color.black.opacity(0.5)
+                background: Color(red: 0.12, green: 0.12, blue: 0.13),
+                foreground: Color(red: 0.85, green: 0.83, blue: 0.80),
+                accent: Color.white.opacity(0.4)
             )
         }
     }

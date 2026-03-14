@@ -11,8 +11,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
-        statusItem = NSStatusBar.system.statusItem(withLength: 56)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
+            button.image = NSImage(systemSymbolName: "figure.boxing", accessibilityDescription: nil)
+            button.imagePosition = .imageTrailing
+            button.title = timer.displayMinutes
             button.title = timer.displayMinutes
             button.action = #selector(togglePanel)
             button.target = self
@@ -26,11 +29,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             size: NSSize(width: 220, height: 220)
         )
 
-        timer.$displayMinutes
+        Publishers.CombineLatest(timer.$displayMinutes, timer.$mode)
             .receive(on: RunLoop.main)
-            .sink { [weak self] text in
-                guard let self = self else { return }
-                self.statusItem.button?.title = text
+            .sink { [weak self] text, mode in
+                let name = mode == .work ? "figure.boxing" : "figure.stand"
+                self?.statusItem.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+                self?.statusItem.button?.title = text
             }
             .store(in: &cancellables)
 

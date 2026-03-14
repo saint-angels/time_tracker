@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CoreGraphics
 
 class TrackerTimer: ObservableObject {
     @Published var mode: TimerMode = .idle
@@ -8,7 +9,9 @@ class TrackerTimer: ObservableObject {
     @Published var displayMinutes: String = "0m"
     @Published var displayFull: String = "0:00"
     @Published var flashBreakReminder: Bool = false
+    @Published var afkProgress: Double = 0
 
+    static let afkTimeout = 1 * 60
     private static let breakReminderAt = 30 * 60
     private static let breakReminderRepeat = 5 * 60
     private var lastFlashMinute: Int = -1
@@ -38,15 +41,17 @@ class TrackerTimer: ObservableObject {
         startTicker(fast: true)
     }
 
-    func startBreak() {
+    func startBreak(offset: TimeInterval = 0) {
         if mode == .break { return }
         logCurrentSession()
         bankTime()
         mode = .break
-        elapsedSeconds = 0
-        displayFull = "0:00"
+        elapsedSeconds = Int(offset)
+        let m = elapsedSeconds / 60
+        let s = elapsedSeconds % 60
+        displayFull = String(format: "%d:%02d", m, s)
         lastFlashMinute = -1
-        startDate = Date()
+        startDate = Date().addingTimeInterval(-offset)
         startTicker()
     }
 
@@ -89,6 +94,24 @@ class TrackerTimer: ObservableObject {
             displayFull = String(format: "%d:%02d", m, s)
         }
         checkBreakReminder()
+        checkIdle()
+    }
+
+    private func checkIdle() {
+        guard mode == .work else {
+            afkProgress = 0
+            return
+        }
+        let eventTypes: [CGEventType] = [.mouseMoved, .keyDown, .leftMouseDown, .scrollWheel]
+        let idleSeconds = eventTypes.map {
+            CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: $0)
+        }.min() ?? 0
+        afkProgress = min(1.0, idleSeconds / Double(Self.afkTimeout))
+        if idleSeconds >= Double(Self.afkTimeout) {
+            let idleInt = Int(idleSeconds)
+            elapsedSeconds = max(0, elapsedSeconds - idleInt)
+            startBreak(offset: Double(Self.afkTimeout))
+        }
     }
 
     private func checkBreakReminder() {

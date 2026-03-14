@@ -18,8 +18,7 @@ struct PopoverContentView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             // Mode label / timer
             if timer.mode == .idle {
                 Text("READY")
@@ -40,7 +39,7 @@ struct PopoverContentView: View {
                     .foregroundColor(scheme.foreground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 6)
-                rule
+                afkRule
             }
 
             // Daily total - micro annotation (work mode only)
@@ -57,21 +56,17 @@ struct PopoverContentView: View {
 
             // Buttons
             HStack(spacing: 6) {
+                timerButton("QUIT", bg: .clear, fg: scheme.foreground.opacity(0.3)) { NSApp.terminate(nil) }
                 if timer.mode == .work {
-                    timerButton("BREAK", bg: .clear, fg: .black) { timer.startBreak() }
+                    timerButton("BREAK", bg: .clear, fg: scheme.foreground) { timer.startBreak() }
                 } else {
-                    timerButton("WORK", bg: .clear, fg: .black) { timer.startWork() }
+                    timerButton("WORK", bg: .clear, fg: scheme.foreground) { timer.startWork() }
                 }
                 Spacer()
             }
         }
         .padding(12)
         .frame(width: 240)
-
-            // Quit in true top-right corner
-            timerButton("QUIT", bg: .clear, fg: Color.black.opacity(0.3), bordered: false) { NSApp.terminate(nil) }
-                .padding(6)
-        }
         .background(scheme.background)
     }
 
@@ -79,6 +74,22 @@ struct PopoverContentView: View {
         Rectangle()
             .fill(scheme.foreground.opacity(0.2))
             .frame(height: 0.5)
+    }
+
+    private var afkRule: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(scheme.foreground.opacity(0.2))
+                    .frame(height: 0.5)
+                if timer.afkProgress > 0 {
+                    Rectangle()
+                        .fill(scheme.foreground)
+                        .frame(width: geo.size.width * timer.afkProgress, height: 1.5)
+                }
+            }
+        }
+        .frame(height: 1.5)
     }
 
     private func timerButton(_ label: String, bg: Color, fg: Color, bordered: Bool = true, action: @escaping () -> Void) -> some View {
