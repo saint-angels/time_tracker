@@ -2,8 +2,7 @@ import Foundation
 import Combine
 
 class TrackerTimer: ObservableObject {
-    @Published var mode: TimerMode?
-    @Published var isRunning: Bool = false
+    @Published var mode: TimerMode = .idle
     @Published var elapsedSeconds: Int = 0
     @Published var dailyWorkTotal: Int = 0
     @Published var displayMinutes: String = "0m"
@@ -16,60 +15,44 @@ class TrackerTimer: ObservableObject {
     private var startDate: Date?
     private var ticker: Timer?
     private var cancellables = Set<AnyCancellable>()
+    let log = SessionLog()
 
     init() {
+        log.loadLastDay()
+        dailyWorkTotal = log.loadTodayWorkTotal()
         $elapsedSeconds
             .map { seconds in
                 "\(seconds / 60)m"
             }
             .assign(to: &$displayMinutes)
-
-        $elapsedSeconds
-            .map { seconds in
-                let m = seconds / 60
-                let s = seconds % 60
-                return String(format: "%d:%02d", m, s)
-            }
-            .assign(to: &$displayFull)
     }
 
     func startWork() {
-        if mode == .work && isRunning { return }
-        if mode == .break && isRunning {
-            bankTime()
-        }
+        if mode == .work { return }
+        if mode != .idle { logCurrentSession() }
         mode = .work
         elapsedSeconds = 0
+        displayFull = "00.00"
         lastFlashMinute = -1
         startDate = Date()
-        isRunning = true
-        startTicker()
+        startTicker(fast: true)
     }
 
     func startBreak() {
-        if mode == .break && isRunning { return }
-        if mode == .work && isRunning {
-            bankTime()
-        }
+        if mode == .break { return }
+        logCurrentSession()
+        bankTime()
         mode = .break
         elapsedSeconds = 0
+        displayFull = "0:00"
         lastFlashMinute = -1
         startDate = Date()
-        isRunning = true
         startTicker()
     }
 
-    func reset() {
-        if mode == .work {
-            bankTime()
-        }
-        ticker?.invalidate()
-        ticker = nil
-        startDate = nil
-        isRunning = false
-        elapsedSeconds = 0
-        lastFlashMinute = -1
-        mode = nil
+    private func logCurrentSession() {
+        guard elapsedSeconds >= 60 else { return }
+        log.log(mode: mode, duration: elapsedSeconds)
     }
 
     private func bankTime() {
@@ -78,21 +61,38 @@ class TrackerTimer: ObservableObject {
         }
     }
 
-    private func startTicker() {
+    private func startTicker(fast: Bool = false) {
         ticker?.invalidate()
-        ticker = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        let interval: TimeInterval = fast ? 1.0 / 30.0 : 0.5
+        ticker = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.tick()
         }
     }
 
     private func tick() {
-        guard let start = startDate else { return }
-        elapsedSeconds = Int(Date().timeIntervalSince(start))
+        guard let startDate = startDate else { return }
+        let elapsed = Date().timeIntervalSince(startDate)
+        elapsedSeconds = Int(elapsed)
+        if mode == .work {
+            let m = Int(elapsed) / 60
+            let s = Int(elapsed) % 60
+            if elapsed < 60 {
+                let cs = Int((elapsed - elapsed.rounded(.towardZero)) * 100)
+                displayFull = String(format: "%02d.%02d", s, cs)
+            } else {
+                displayFull = String(format: "%d:%02d", m, s)
+                startTicker()
+            }
+        } else {
+            let m = Int(elapsed) / 60
+            let s = Int(elapsed) % 60
+            displayFull = String(format: "%d:%02d", m, s)
+        }
         checkBreakReminder()
     }
 
     private func checkBreakReminder() {
-        guard mode == .work, isRunning, elapsedSeconds >= Self.breakReminderAt else { return }
+        guard mode == .work, elapsedSeconds >= Self.breakReminderAt else { return }
         let pastThreshold = elapsedSeconds - Self.breakReminderAt
         let reminderMinute = pastThreshold / Self.breakReminderRepeat
         if reminderMinute != lastFlashMinute {

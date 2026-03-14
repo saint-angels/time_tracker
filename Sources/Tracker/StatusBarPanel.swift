@@ -7,7 +7,7 @@ final class StatusBarPanel: NSPanel {
     init(contentRect: NSRect) {
         super.init(
             contentRect: contentRect,
-            styleMask: [.nonactivatingPanel, .fullSizeContentView, .titled],
+            styleMask: [.nonactivatingPanel],
             backing: .buffered,
             defer: true
         )
