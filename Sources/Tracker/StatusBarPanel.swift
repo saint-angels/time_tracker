@@ -50,6 +50,7 @@ final class StatusBarPanelController {
         reposition()
         panel.alphaValue = 1
         panel.makeKeyAndOrderFront(nil)
+        setButtonHighlight(true)
         startMonitoringClicks()
     }
 
@@ -59,6 +60,7 @@ final class StatusBarPanelController {
             panel.animator().alphaValue = 0
         } completionHandler: { [weak self] in
             self?.panel.orderOut(nil)
+            self?.setButtonHighlight(false)
             self?.stopMonitoringClicks()
         }
     }
@@ -95,6 +97,17 @@ final class StatusBarPanelController {
             matching: [.leftMouseDown, .rightMouseDown]
         ) { [weak self] _ in
             self?.dismiss()
+        }
+    }
+
+    private func setButtonHighlight(_ highlight: Bool) {
+        guard let button = statusItem.button else { return }
+        button.highlight(highlight)
+        // Re-assert after runloop to override system reset
+        if highlight {
+            DispatchQueue.main.async { [weak button] in
+                button?.highlight(true)
+            }
         }
     }
 

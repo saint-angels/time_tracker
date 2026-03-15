@@ -52,10 +52,11 @@ class SessionLog {
     private func formatDuration(_ seconds: Int) -> String {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
+        let s = seconds % 60
         if h > 0 {
-            return "\(h)h \(m)m"
+            return s > 0 ? "\(h)h \(m)m \(s)s" : "\(h)h \(m)m"
         }
-        return "\(m)m"
+        return s > 0 ? "\(m)m \(s)s" : "\(m)m"
     }
 
     private func append(_ text: String) {
@@ -95,6 +96,39 @@ class SessionLog {
             }
         }
         return total
+    }
+
+    func recentEntries(limit: Int = 3) -> (entries: [(time: String, label: String, duration: String)], remaining: Int) {
+        guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { return ([], 0) }
+        let today = dayFormatter.string(from: Date())
+        let header = "# \(today)"
+        guard let headerRange = content.range(of: header) else { return ([], 0) }
+        let todayContent = String(content[headerRange.lowerBound...])
+        let lines = todayContent.split(separator: "\n").reversed()
+        var entries: [(time: String, label: String, duration: String)] = []
+        var totalCount = 0
+        for line in lines {
+            guard line.hasPrefix("- ") else { continue }
+            totalCount += 1
+            guard entries.count < limit else { continue }
+            let trimmed = line.dropFirst(2)
+            let parts = trimmed.split(separator: " ", maxSplits: 2)
+            guard parts.count >= 2 else { totalCount -= 1; continue }
+            let time = String(parts[0])
+            let modeLabel = String(parts[1])
+            let label: String
+            switch modeLabel {
+            case "Work": label = "WORKED"
+            case "Rest": label = "RESTED"
+            default: label = modeLabel.uppercased()
+            }
+            var duration = ""
+            if let open = line.range(of: "("), let close = line.range(of: ")") {
+                duration = String(line[open.upperBound..<close.lowerBound])
+            }
+            entries.append((time: time, label: label, duration: duration))
+        }
+        return (entries, max(0, totalCount - entries.count))
     }
 
     private func parseDuration(_ text: String) -> Int {

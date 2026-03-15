@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PopoverContentView: View {
     @ObservedObject var timer: TrackerTimer
+    @State private var flashOpacity: Double = 0
 
     private var scheme: ColorScheme {
         timer.mode.scheme
@@ -12,47 +13,39 @@ struct PopoverContentView: View {
         let h = total / 3600
         let m = (total % 3600) / 60
         if h > 0 {
-            return "TOTAL \(h)H \(m)M"
+            return "DAY \(h)H \(m)M"
         }
-        return "TOTAL \(m)M"
+        return "DAY \(m)M"
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Mode label / timer
-            if timer.mode == .idle {
-                Text("READY")
-                    .font(.system(size: 52, weight: .heavy, design: .monospaced))
-                    .foregroundColor(scheme.accent)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 2)
-            } else {
-                Text(timer.mode.label.uppercased())
-                    .font(.system(size: 11, weight: .heavy, design: .monospaced))
-                    .tracking(4)
-                    .foregroundColor(scheme.accent)
-                    .padding(.bottom, 2)
+            Text(timer.mode.label.uppercased())
+                .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                .tracking(4)
+                .foregroundColor(scheme.accent)
+                .padding(.bottom, 2)
 
-                rule
-                Text(timer.displayFull)
-                    .font(.system(size: timer.mode == .work && timer.elapsedSeconds < 60 ? 36 : 52, weight: .heavy, design: .monospaced))
-                    .foregroundColor(scheme.foreground)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 6)
-                afkRule
-            }
+            rule
+            Text(timer.mode == .idle ? "READY" : timer.displayFull)
+                .font(.system(size: 36, weight: .heavy, design: .monospaced))
+                .foregroundColor(timer.mode == .idle ? scheme.accent : scheme.foreground)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .topTrailing) {
+                    logEntries.offset(y: 30)
+                }
+                .overlay {
+                    if let word = timer.flashWord {
+                        Text(word)
+                            .font(.system(size: 80, weight: .heavy))
+                            .foregroundColor(scheme.foreground.opacity(0.15 * flashOpacity))
+                            .allowsHitTesting(false)
+                    }
+                }
+            afkRule
 
-            // Daily total - micro annotation (work mode only)
-            if timer.mode == .work {
-                Text(dailyTotalText)
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                    .tracking(3)
-                    .foregroundColor(scheme.foreground.opacity(0.35))
-                    .padding(.top, 4)
-                    .padding(.bottom, 10)
-            } else {
-                Spacer().frame(height: 14)
-            }
+            Spacer()
 
             // Buttons
             HStack(spacing: 6) {
@@ -66,8 +59,14 @@ struct PopoverContentView: View {
             }
         }
         .padding(12)
-        .frame(width: 240)
+        .frame(width: 240, height: 160)
         .background(scheme.background)
+        .onChange(of: timer.flashWord) {
+            flashOpacity = 1
+            withAnimation(.easeOut(duration: 1.5)) {
+                flashOpacity = 0
+            }
+        }
     }
 
     private var rule: some View {
@@ -76,33 +75,67 @@ struct PopoverContentView: View {
             .frame(height: 0.5)
     }
 
+    @ViewBuilder
+    private var logEntries: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(dailyTotalText)
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .foregroundColor(scheme.foreground.opacity(0.35))
+            ForEach(Array(timer.recentEntries.enumerated()), id: \.offset) { _, entry in
+                Text("\(entry.time) \(entry.label) \(entry.duration)")
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .foregroundColor(scheme.foreground.opacity(0.35))
+            }
+            if timer.moreEntriesCount > 0 {
+                Text("+\(timer.moreEntriesCount)")
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .foregroundColor(scheme.foreground.opacity(0.35))
+            }
+        }
+    }
+
+    @ViewBuilder
     private var afkRule: some View {
+        if timer.mode == .work {
+            Text("AFK")
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .foregroundColor(scheme.foreground.opacity(0.35))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
         GeometryReader { geo in
-            ZStack(alignment: .leading) {
+            if timer.mode == .work, timer.afkProgress > 0 {
                 Rectangle()
-                    .fill(scheme.foreground.opacity(0.2))
-                    .frame(height: 0.5)
-                if timer.afkProgress > 0 {
-                    Rectangle()
-                        .fill(scheme.foreground)
-                        .frame(width: geo.size.width * timer.afkProgress, height: 1.5)
-                }
+                    .fill(scheme.foreground)
+                    .frame(width: geo.size.width * timer.afkProgress, height: 1.5)
             }
         }
         .frame(height: 1.5)
     }
 
     private func timerButton(_ label: String, bg: Color, fg: Color, bordered: Bool = true, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        PressableButton(action: action) { isPressed in
             Text(label)
                 .font(.system(size: 10, weight: .heavy, design: .monospaced))
                 .tracking(1)
-                .foregroundColor(fg)
+                .foregroundColor(isPressed ? scheme.background : fg)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(bg)
+                .background(isPressed ? fg : bg)
                 .overlay(bordered ? Rectangle().stroke(fg, lineWidth: 1) : nil)
         }
-        .buttonStyle(.plain)
+    }
+}
+
+struct PressableButton<Content: View>: View {
+    let action: () -> Void
+    @ViewBuilder let content: (Bool) -> Content
+    @State private var isPressed = false
+
+    var body: some View {
+        content(isPressed)
+            .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                isPressed = pressing
+            }, perform: {})
+            .simultaneousGesture(TapGesture().onEnded { action() })
     }
 }

@@ -9,13 +9,13 @@ struct ColorScheme {
 enum TimerMode {
     case idle
     case work
-    case `break`
+    case rest
 
     var label: String {
         switch self {
-        case .idle: return "Ready"
+        case .idle: return "Standby"
         case .work: return "Work"
-        case .break: return "Rest"
+        case .rest: return "Rest"
         }
     }
 
@@ -31,9 +31,9 @@ enum TimerMode {
             return ColorScheme(
                 background: Color(red: 1.0, green: 0.95, blue: 0.0),
                 foreground: .black,
-                accent: .black
+                accent: Color.black.opacity(0.5)
             )
-        case .break:
+        case .rest:
             return ColorScheme(
                 background: Color(red: 0.12, green: 0.12, blue: 0.13),
                 foreground: Color(red: 0.85, green: 0.83, blue: 0.80),

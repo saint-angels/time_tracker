@@ -10,6 +10,9 @@ class TrackerTimer: ObservableObject {
     @Published var displayFull: String = "0:00"
     @Published var flashBreakReminder: Bool = false
     @Published var afkProgress: Double = 0
+    @Published var recentEntries: [(time: String, label: String, duration: String)] = []
+    @Published var moreEntriesCount: Int = 0
+    @Published var flashWord: String?
 
     static let afkTimeout = 1 * 60
     private static let breakReminderAt = 30 * 60
@@ -23,6 +26,9 @@ class TrackerTimer: ObservableObject {
     init() {
         log.loadLastDay()
         dailyWorkTotal = log.loadTodayWorkTotal()
+        let recent = log.recentEntries(limit: 3)
+        recentEntries = recent.entries
+        moreEntriesCount = recent.remaining
         $elapsedSeconds
             .map { seconds in
                 "\(seconds / 60)m"
@@ -34,6 +40,8 @@ class TrackerTimer: ObservableObject {
         if mode == .work { return }
         if mode != .idle { logCurrentSession() }
         mode = .work
+        flashWord = nil
+        flashWord = ["冲", "LOS", "AUF"].randomElement()
         elapsedSeconds = 0
         displayFull = "00.00"
         lastFlashMinute = -1
@@ -42,10 +50,12 @@ class TrackerTimer: ObservableObject {
     }
 
     func startBreak(offset: TimeInterval = 0) {
-        if mode == .break { return }
+        if mode == .rest { return }
         logCurrentSession()
         bankTime()
-        mode = .break
+        flashWord = nil
+        flashWord = ["休", "RUH", "HALT", "ШШШ"].randomElement()
+        mode = .rest
         elapsedSeconds = Int(offset)
         let m = elapsedSeconds / 60
         let s = elapsedSeconds % 60
@@ -58,6 +68,9 @@ class TrackerTimer: ObservableObject {
     private func logCurrentSession() {
         guard elapsedSeconds >= 60 else { return }
         log.log(mode: mode, duration: elapsedSeconds)
+        let recent = log.recentEntries(limit: 3)
+        recentEntries = recent.entries
+        moreEntriesCount = recent.remaining
     }
 
     private func bankTime() {
