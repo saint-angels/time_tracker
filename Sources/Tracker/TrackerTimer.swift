@@ -10,6 +10,7 @@ class TrackerTimer: ObservableObject {
     @Published var displayFull: String = "0:00"
     @Published var flashBreakReminder: Bool = false
     @Published var afkProgress: Double = 0
+    @Published var breakProgress: Double = 0
     @Published var recentEntries: [(time: String, label: String, duration: String)] = []
     @Published var moreEntriesCount: Int = 0
     @Published var flashWord: String?
@@ -65,7 +66,7 @@ class TrackerTimer: ObservableObject {
         startTicker(fast: true)
     }
 
-    func startBreak(offset: TimeInterval = 0) {
+    func startRest(offset: TimeInterval = 0) {
         if mode == .rest { return }
         logCurrentSession()
         bankTime()
@@ -123,6 +124,11 @@ class TrackerTimer: ObservableObject {
             let s = Int(elapsed) % 60
             displayFull = String(format: "%d:%02d", m, s)
         }
+        if mode == .work {
+            breakProgress = min(1.0, Double(elapsedSeconds) / Double(Self.breakReminderAt))
+        } else {
+            breakProgress = 0
+        }
         checkBreakReminder()
         checkIdle()
         checkRestInput()
@@ -141,7 +147,7 @@ class TrackerTimer: ObservableObject {
         if idleSeconds >= Double(Self.afkTimeout) {
             let idleInt = Int(idleSeconds)
             elapsedSeconds = max(0, elapsedSeconds - idleInt)
-            startBreak(offset: Double(Self.afkTimeout))
+            startRest(offset: Double(Self.afkTimeout))
         }
     }
 

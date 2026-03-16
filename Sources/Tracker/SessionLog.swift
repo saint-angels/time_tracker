@@ -122,11 +122,21 @@ class SessionLog {
             case "Rest": label = "RESTED"
             default: label = modeLabel.uppercased()
             }
-            var duration = ""
+            var startTime = time
+            var durMinutes = ""
             if let open = line.range(of: "("), let close = line.range(of: ")") {
-                duration = String(line[open.upperBound..<close.lowerBound])
+                let durText = String(line[open.upperBound..<close.lowerBound])
+                let durSeconds = parseDuration(durText)
+                let totalMin = max(1, (durSeconds + 30) / 60)
+                let h = totalMin / 60
+                let m = totalMin % 60
+                durMinutes = h > 0 ? "+\(h)H\(m)M" : "+\(m)M"
+                if let endDate = dateFormatter.date(from: time) {
+                    let start = endDate.addingTimeInterval(Double(-durSeconds))
+                    startTime = dateFormatter.string(from: start)
+                }
             }
-            entries.append((time: time, label: label, duration: duration))
+            entries.append((time: startTime, label: label, duration: durMinutes))
         }
         return (entries, max(0, totalCount - entries.count))
     }

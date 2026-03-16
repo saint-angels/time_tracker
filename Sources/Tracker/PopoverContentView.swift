@@ -45,6 +45,8 @@ struct PopoverContentView: View {
                             .allowsHitTesting(false)
                     }
                 }
+            breakRule
+            Spacer().frame(height: 1)
             afkRule
 
             Spacer()
@@ -57,7 +59,7 @@ struct PopoverContentView: View {
                     timerButton("STOP", bg: .clear, fg: scheme.foreground.opacity(0.3)) { timer.stop() }
                 }
                 if timer.mode == .work {
-                    timerButton("REST", bg: .clear, fg: scheme.foreground) { timer.startBreak() }
+                    timerButton("REST", bg: .clear, fg: scheme.foreground) { timer.startRest() }
                 } else {
                     timerButton("WORK", bg: .clear, fg: scheme.foreground) { timer.startWork() }
                 }
@@ -111,7 +113,7 @@ struct PopoverContentView: View {
                 .font(.system(size: 8, weight: .bold, design: .monospaced))
                 .foregroundColor(scheme.foreground.opacity(0.35))
             ForEach(Array(timer.recentEntries.enumerated()), id: \.offset) { _, entry in
-                Text("\(entry.time) \(entry.label) \(entry.duration)")
+                Text("\(entry.time) \(entry.duration.padding(toLength: 5, withPad: " ", startingAt: 0)) \(entry.label)")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .foregroundColor(scheme.foreground.opacity(0.35))
             }
@@ -120,6 +122,24 @@ struct PopoverContentView: View {
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .foregroundColor(scheme.foreground.opacity(0.35))
             }
+        }
+    }
+
+    @ViewBuilder
+    private var breakRule: some View {
+        if timer.mode == .work {
+            Text("RST")
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .foregroundColor(scheme.foreground.opacity(0.35))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            GeometryReader { geo in
+                if timer.breakProgress > 0 {
+                    Rectangle()
+                        .fill(scheme.foreground)
+                        .frame(width: geo.size.width * timer.breakProgress, height: 1.5)
+                }
+            }
+            .frame(height: 1.5)
         }
     }
 
