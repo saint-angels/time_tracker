@@ -3,6 +3,8 @@ import SwiftUI
 struct PopoverContentView: View {
     @ObservedObject var timer: TrackerTimer
     @State private var flashOpacity: Double = 0
+    @State private var restWarningOpacity: Double = 0
+    @State private var restToWorkOpacity: Double = 0
 
     private var scheme: ColorScheme {
         timer.mode.scheme
@@ -49,9 +51,13 @@ struct PopoverContentView: View {
 
             // Buttons
             HStack(spacing: 6) {
-                timerButton("QUIT", bg: .clear, fg: scheme.foreground.opacity(0.3)) { NSApp.terminate(nil) }
+                if timer.mode == .idle {
+                    timerButton("QUIT", bg: .clear, fg: scheme.foreground.opacity(0.3)) { NSApp.terminate(nil) }
+                } else {
+                    timerButton("STOP", bg: .clear, fg: scheme.foreground.opacity(0.3)) { timer.stop() }
+                }
                 if timer.mode == .work {
-                    timerButton("BREAK", bg: .clear, fg: scheme.foreground) { timer.startBreak() }
+                    timerButton("REST", bg: .clear, fg: scheme.foreground) { timer.startBreak() }
                 } else {
                     timerButton("WORK", bg: .clear, fg: scheme.foreground) { timer.startWork() }
                 }
@@ -60,11 +66,34 @@ struct PopoverContentView: View {
         }
         .padding(12)
         .frame(width: 240, height: 160)
-        .background(scheme.background)
+        .background(
+            ZStack {
+                scheme.background
+                Color.white.opacity(restWarningOpacity)
+                TimerMode.work.scheme.background.opacity(restToWorkOpacity)
+            }
+        )
         .onChange(of: timer.flashWord) {
             flashOpacity = 1
             withAnimation(.easeOut(duration: 1.5)) {
                 flashOpacity = 0
+            }
+        }
+        .onChange(of: timer.flashRestWarning) {
+            if timer.flashRestWarning {
+                restWarningOpacity = 1
+                withAnimation(.easeOut(duration: 0.3)) {
+                    restWarningOpacity = 0
+                }
+                timer.flashRestWarning = false
+            }
+        }
+        .onChange(of: timer.flashRestToWork) {
+            if timer.flashRestToWork {
+                restToWorkOpacity = 1
+                withAnimation(.easeOut(duration: 0.4)) {
+                    restToWorkOpacity = 0
+                }
             }
         }
     }

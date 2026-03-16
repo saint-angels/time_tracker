@@ -28,6 +28,7 @@ final class StatusBarPanelController {
     private let statusItem: NSStatusItem
     private var eventMonitor: Any?
     private let margin: CGFloat = 2
+    var pinned = false
 
     init(statusItem: NSStatusItem, content: some View, size: NSSize) {
         self.statusItem = statusItem
@@ -55,6 +56,7 @@ final class StatusBarPanelController {
     }
 
     func dismiss() {
+        if pinned { return }
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.15
             panel.animator().alphaValue = 0

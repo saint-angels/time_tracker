@@ -38,6 +38,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        timer.$mode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] mode in
+                guard let self else { return }
+                if mode == .rest {
+                    self.panelController.show()
+                    self.panelController.pinned = true
+                } else {
+                    self.panelController.pinned = false
+                }
+            }
+            .store(in: &cancellables)
+
         timer.$flashBreakReminder
             .receive(on: RunLoop.main)
             .filter { $0 }

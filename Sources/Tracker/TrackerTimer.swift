@@ -13,11 +13,15 @@ class TrackerTimer: ObservableObject {
     @Published var recentEntries: [(time: String, label: String, duration: String)] = []
     @Published var moreEntriesCount: Int = 0
     @Published var flashWord: String?
+    @Published var flashRestWarning: Bool = false
+    @Published var flashRestToWork: Bool = false
 
-    static let afkTimeout = 1 * 60
+    static let afkTimeout = 3 * 60
     private static let breakReminderAt = 30 * 60
     private static let breakReminderRepeat = 5 * 60
+    private static let maxRestDuration = 5 * 60
     private var lastFlashMinute: Int = -1
+    private var lastRestWarning: Date = .distantPast
     private var startDate: Date?
     private var ticker: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -34,6 +38,18 @@ class TrackerTimer: ObservableObject {
                 "\(seconds / 60)m"
             }
             .assign(to: &$displayMinutes)
+    }
+
+    func stop() {
+        if mode == .idle { return }
+        logCurrentSession()
+        bankTime()
+        ticker?.invalidate()
+        ticker = nil
+        mode = .idle
+        elapsedSeconds = 0
+        afkProgress = 0
+        startDate = nil
     }
 
     func startWork() {
@@ -55,6 +71,7 @@ class TrackerTimer: ObservableObject {
         bankTime()
         flashWord = nil
         flashWord = ["休", "RUH", "HALT", "ШШШ"].randomElement()
+        lastRestWarning = Date()
         mode = .rest
         elapsedSeconds = Int(offset)
         let m = elapsedSeconds / 60
@@ -108,6 +125,7 @@ class TrackerTimer: ObservableObject {
         }
         checkBreakReminder()
         checkIdle()
+        checkRestInput()
     }
 
     private func checkIdle() {
@@ -125,6 +143,27 @@ class TrackerTimer: ObservableObject {
             elapsedSeconds = max(0, elapsedSeconds - idleInt)
             startBreak(offset: Double(Self.afkTimeout))
         }
+    }
+
+    private func checkRestInput() {
+        guard mode == .rest else { return }
+        let eventTypes: [CGEventType] = [.mouseMoved, .keyDown, .leftMouseDown, .scrollWheel]
+        let idleSeconds = eventTypes.map {
+            CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: $0)
+        }.min() ?? .infinity
+        guard idleSeconds < 2 else { return }
+        if elapsedSeconds >= Self.maxRestDuration {
+            flashRestToWork = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.flashRestToWork = false
+                self?.startWork()
+            }
+            return
+        }
+        let now = Date()
+        guard now.timeIntervalSince(lastRestWarning) >= 10 else { return }
+        lastRestWarning = now
+        flashRestWarning = true
     }
 
     private func checkBreakReminder() {
