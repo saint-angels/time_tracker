@@ -21,7 +21,7 @@ class TrackerTimer: ObservableObject {
     static let afkTimeout = 3 * 60
     private static let breakReminderAt = 25 * 60
     private static let breakReminderRepeat = 5 * 60
-    private static let overheatMax = 90 * 60  // 1.5h total
+    private static let overheatMax = 90 * 60
     private static let maxRestDuration = 5 * 60
     private var lastFlashMinute: Int = -1
     private var lastRestWarning: Date = .distantPast

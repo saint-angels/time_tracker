@@ -6,6 +6,8 @@ struct PopoverContentView: View {
     @State private var restWarningOpacity: Double = 0
     @State private var restToWorkOpacity: Double = 0
     @State private var shakeOffset: CGFloat = 0
+    @State private var shakeOffsetY: CGFloat = 0
+    @State private var shakeTimer: Timer?
 
     private var scheme: ColorScheme {
         timer.mode.scheme
@@ -35,7 +37,7 @@ struct PopoverContentView: View {
                 .font(.system(size: 36, weight: .heavy, design: .monospaced))
                 .foregroundColor(timer.mode == .idle ? scheme.accent : scheme.foreground)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .offset(x: shakeOffset)
+                .offset(x: shakeOffset, y: shakeOffsetY)
                 .overlay(alignment: .topTrailing) {
                     logEntries.offset(y: 30)
                 }
@@ -104,13 +106,20 @@ struct PopoverContentView: View {
                 }
             }
         }
-        .onChange(of: timer.displayFull) {
-            if timer.overheatProgress > 0 {
+        .onAppear {
+            shakeTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { _ in
                 let maxShake = 4.0 * timer.overheatProgress
-                shakeOffset = CGFloat.random(in: -maxShake...maxShake)
-            } else {
-                shakeOffset = 0
+                if maxShake > 0 {
+                    shakeOffset = CGFloat.random(in: -maxShake...maxShake)
+                    shakeOffsetY = CGFloat.random(in: -(maxShake / 5)...(maxShake / 5))
+                } else {
+                    shakeOffset = 0
+                    shakeOffsetY = 0
+                }
             }
+        }
+        .onDisappear {
+            shakeTimer?.invalidate()
         }
     }
 
@@ -150,7 +159,7 @@ struct PopoverContentView: View {
             let remainder = timer.breakProgress - Double(fullLines)
             GeometryReader { geo in
                 if timer.breakProgress > 0 {
-                    VStack(spacing: 1) {
+                    VStack(alignment: .leading, spacing: 1) {
                         ForEach(0..<max(fullLines, 0), id: \.self) { _ in
                             Rectangle()
                                 .fill(scheme.foreground)
