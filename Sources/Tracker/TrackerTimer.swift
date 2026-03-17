@@ -16,10 +16,12 @@ class TrackerTimer: ObservableObject {
     @Published var flashWord: String?
     @Published var flashRestWarning: Bool = false
     @Published var flashRestToWork: Bool = false
+    @Published var overheatProgress: Double = 0
 
     static let afkTimeout = 3 * 60
     private static let breakReminderAt = 25 * 60
     private static let breakReminderRepeat = 5 * 60
+    private static let overheatMax = 90 * 60  // 1.5h total
     private static let maxRestDuration = 5 * 60
     private var lastFlashMinute: Int = -1
     private var lastRestWarning: Date = .distantPast
@@ -125,9 +127,17 @@ class TrackerTimer: ObservableObject {
             displayFull = String(format: "%d:%02d", m, s)
         }
         if mode == .work {
-            breakProgress = min(1.0, Double(elapsedSeconds) / Double(Self.breakReminderAt))
+            breakProgress = Double(elapsedSeconds) / Double(Self.breakReminderAt)
+            if elapsedSeconds > Self.breakReminderAt {
+                let past = Double(elapsedSeconds - Self.breakReminderAt)
+                let range = Double(Self.overheatMax - Self.breakReminderAt)
+                overheatProgress = min(1.0, past / range)
+            } else {
+                overheatProgress = 0
+            }
         } else {
             breakProgress = 0
+            overheatProgress = 0
         }
         checkBreakReminder()
         checkIdle()

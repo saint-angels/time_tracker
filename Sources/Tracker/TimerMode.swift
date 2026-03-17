@@ -4,6 +4,7 @@ struct ColorScheme {
     let background: Color
     let foreground: Color
     let accent: Color
+    let hover: Color
 }
 
 enum TimerMode {
@@ -25,19 +26,22 @@ enum TimerMode {
             return ColorScheme(
                 background: Color(red: 0.92, green: 0.90, blue: 0.86),
                 foreground: .black,
-                accent: Color.black.opacity(0.5)
+                accent: Color.black.opacity(0.5),
+                hover: .black
             )
         case .work:
             return ColorScheme(
                 background: Color(red: 1.0, green: 0.95, blue: 0.0),
                 foreground: .black,
-                accent: Color.black.opacity(0.5)
+                accent: Color.black.opacity(0.5),
+                hover: .black
             )
         case .rest:
             return ColorScheme(
                 background: Color(red: 0.12, green: 0.12, blue: 0.13),
                 foreground: Color(red: 0.85, green: 0.83, blue: 0.80),
-                accent: Color.white.opacity(0.4)
+                accent: Color.white.opacity(0.4),
+                hover: .white
             )
         }
     }

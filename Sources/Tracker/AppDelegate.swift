@@ -55,7 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .receive(on: RunLoop.main)
             .filter { $0 }
             .sink { [weak self] _ in
-                self?.flashMenuBar()
+                self?.panelController.show()
                 self?.timer.flashBreakReminder = false
             }
             .store(in: &cancellables)

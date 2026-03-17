@@ -42,7 +42,7 @@ struct HorseView: NSViewRepresentable {
             maxVec.z - minVec.z
         )
         let maxDim = max(size.x, max(size.y, size.z))
-        let scale = 3.0 / maxDim
+        let scale = 2.7 / maxDim
         horseNode.scale = SCNVector3(scale, scale, scale)
         let center = SCNVector3(
             (minVec.x + maxVec.x) / 2 * scale,
