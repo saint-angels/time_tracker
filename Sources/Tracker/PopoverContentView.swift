@@ -71,6 +71,9 @@ struct PopoverContentView: View {
         .background(
             ZStack {
                 scheme.background
+                if timer.mode == .rest {
+                    HorseView()
+                }
                 Color.white.opacity(restWarningOpacity)
                 TimerMode.work.scheme.background.opacity(restToWorkOpacity)
             }

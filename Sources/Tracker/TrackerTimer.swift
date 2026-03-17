@@ -18,7 +18,7 @@ class TrackerTimer: ObservableObject {
     @Published var flashRestToWork: Bool = false
 
     static let afkTimeout = 3 * 60
-    private static let breakReminderAt = 30 * 60
+    private static let breakReminderAt = 25 * 60
     private static let breakReminderRepeat = 5 * 60
     private static let maxRestDuration = 5 * 60
     private var lastFlashMinute: Int = -1
@@ -152,7 +152,7 @@ class TrackerTimer: ObservableObject {
     }
 
     private func checkRestInput() {
-        guard mode == .rest else { return }
+        guard mode == .rest, !flashRestToWork else { return }
         let eventTypes: [CGEventType] = [.mouseMoved, .keyDown, .leftMouseDown, .scrollWheel]
         let idleSeconds = eventTypes.map {
             CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: $0)
