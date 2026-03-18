@@ -23,9 +23,12 @@ class TrackerTimer: ObservableObject {
     private static let breakReminderRepeat = 5 * 60
     private static let overheatMax = 90 * 60
     private static let maxRestDuration = 5 * 60
+    var timeMultiplier: Double = 1.0
     private var lastFlashMinute: Int = -1
     private var lastRestWarning: Date = .distantPast
     private var startDate: Date?
+    private var lastTickDate: Date?
+    private var accumulatedTime: Double = 0
     private var ticker: Timer?
     private var cancellables = Set<AnyCancellable>()
     let log = SessionLog()
@@ -52,6 +55,8 @@ class TrackerTimer: ObservableObject {
         mode = .idle
         elapsedSeconds = 0
         afkProgress = 0
+        overheatProgress = 0
+        breakProgress = 0
         startDate = nil
     }
 
@@ -62,6 +67,8 @@ class TrackerTimer: ObservableObject {
         flashWord = nil
         flashWord = ["冲", "LOS", "AUF"].randomElement()
         elapsedSeconds = 0
+        accumulatedTime = 0
+        lastTickDate = Date()
         displayFull = "00.00"
         lastFlashMinute = -1
         startDate = Date()
@@ -77,6 +84,8 @@ class TrackerTimer: ObservableObject {
         lastRestWarning = Date()
         mode = .rest
         elapsedSeconds = Int(offset)
+        accumulatedTime = offset
+        lastTickDate = Date()
         let m = elapsedSeconds / 60
         let s = elapsedSeconds % 60
         displayFull = String(format: "%d:%02d", m, s)
@@ -108,8 +117,12 @@ class TrackerTimer: ObservableObject {
     }
 
     private func tick() {
-        guard let startDate = startDate else { return }
-        let elapsed = Date().timeIntervalSince(startDate)
+        guard startDate != nil else { return }
+        let now = Date()
+        let delta = now.timeIntervalSince(lastTickDate ?? now)
+        lastTickDate = now
+        accumulatedTime += delta * timeMultiplier
+        let elapsed = accumulatedTime
         elapsedSeconds = Int(elapsed)
         if mode == .work {
             let m = Int(elapsed) / 60

@@ -8,6 +8,8 @@ struct PopoverContentView: View {
     @State private var shakeOffset: CGFloat = 0
     @State private var shakeOffsetY: CGFloat = 0
     @State private var shakeTimer: Timer?
+    @State private var keyDownMonitor: Any?
+    @State private var keyUpMonitor: Any?
 
     private var scheme: ColorScheme {
         timer.mode.scheme
@@ -117,9 +119,19 @@ struct PopoverContentView: View {
                     shakeOffsetY = 0
                 }
             }
+            keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                if event.keyCode == 49 { timer.timeMultiplier = 300.0; return nil }
+                return event
+            }
+            keyUpMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
+                if event.keyCode == 49 { timer.timeMultiplier = 1.0; return nil }
+                return event
+            }
         }
         .onDisappear {
             shakeTimer?.invalidate()
+            if let m = keyDownMonitor { NSEvent.removeMonitor(m) }
+            if let m = keyUpMonitor { NSEvent.removeMonitor(m) }
         }
     }
 
