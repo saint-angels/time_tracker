@@ -4,6 +4,8 @@ import ModelIO
 import SceneKit.ModelIO
 
 struct HorseView: NSViewRepresentable {
+    var wireColor: NSColor = NSColor(white: 0.6, alpha: 0.15)
+
     func makeNSView(context: Context) -> SCNView {
         let sceneView = SCNView()
         sceneView.backgroundColor = .clear
@@ -27,7 +29,7 @@ struct HorseView: NSViewRepresentable {
 
         // Wireframe material in light gray
         let material = SCNMaterial()
-        material.diffuse.contents = NSColor(white: 0.6, alpha: 0.15)
+        material.diffuse.contents = wireColor
         material.lightingModel = .constant
         material.fillMode = .lines
         horseNode.enumerateChildNodes { node, _ in
@@ -53,7 +55,6 @@ struct HorseView: NSViewRepresentable {
 
         scene.rootNode.addChildNode(horseNode)
 
-        // Slow rotation
         let rotation = CABasicAnimation(keyPath: "rotation")
         rotation.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
         rotation.duration = 20

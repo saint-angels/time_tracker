@@ -10,8 +10,9 @@ struct PopoverContentView: View {
     @State private var shakeTimer: Timer?
     @State private var keyDownMonitor: Any?
     @State private var keyUpMonitor: Any?
+    @State private var showSettings = false
 
-    private var scheme: ColorScheme {
+    private var scheme: ModeScheme {
         timer.mode.scheme
     }
 
@@ -26,6 +27,9 @@ struct PopoverContentView: View {
     }
 
     var body: some View {
+        if showSettings {
+            SettingsView(scheme: scheme, onDone: { showSettings = false })
+        } else {
         VStack(alignment: .leading, spacing: 0) {
             // Mode label / timer
             Text(timer.mode.label.uppercased())
@@ -70,6 +74,9 @@ struct PopoverContentView: View {
                     timerButton("WORK", bg: .clear, fg: scheme.foreground.opacity(0.5)) { timer.startWork() }
                 }
                 Spacer()
+                if timer.mode == .idle {
+                    timerButton("SET", bg: .clear, fg: scheme.foreground.opacity(0.5)) { showSettings = true }
+                }
             }
         }
         .padding(12)
@@ -132,6 +139,7 @@ struct PopoverContentView: View {
             shakeTimer?.invalidate()
             if let m = keyDownMonitor { NSEvent.removeMonitor(m) }
             if let m = keyUpMonitor { NSEvent.removeMonitor(m) }
+        }
         }
     }
 

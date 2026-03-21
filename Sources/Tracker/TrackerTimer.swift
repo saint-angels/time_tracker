@@ -18,11 +18,9 @@ class TrackerTimer: ObservableObject {
     @Published var flashRestToWork: Bool = false
     @Published var overheatProgress: Double = 0
 
-    static let afkTimeout = 3 * 60
-    private static let breakReminderAt = 25 * 60
+    private let settings = Settings.shared
     private static let breakReminderRepeat = 5 * 60
     private static let overheatMax = 90 * 60
-    private static let maxRestDuration = 5 * 60
     var timeMultiplier: Double = 1.0
     private var lastFlashMinute: Int = -1
     private var lastRestWarning: Date = .distantPast
@@ -140,10 +138,10 @@ class TrackerTimer: ObservableObject {
             displayFull = String(format: "%d:%02d", m, s)
         }
         if mode == .work {
-            breakProgress = Double(elapsedSeconds) / Double(Self.breakReminderAt)
-            if elapsedSeconds > Self.breakReminderAt {
-                let past = Double(elapsedSeconds - Self.breakReminderAt)
-                let range = Double(Self.overheatMax - Self.breakReminderAt)
+            breakProgress = Double(elapsedSeconds) / Double(settings.breakReminderAt)
+            if elapsedSeconds > settings.breakReminderAt {
+                let past = Double(elapsedSeconds - settings.breakReminderAt)
+                let range = Double(Self.overheatMax - settings.breakReminderAt)
                 overheatProgress = min(1.0, past / range)
             } else {
                 overheatProgress = 0
@@ -166,11 +164,11 @@ class TrackerTimer: ObservableObject {
         let idleSeconds = eventTypes.map {
             CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: $0)
         }.min() ?? 0
-        afkProgress = min(1.0, idleSeconds / Double(Self.afkTimeout))
-        if idleSeconds >= Double(Self.afkTimeout) {
+        afkProgress = min(1.0, idleSeconds / Double(settings.afkTimeout))
+        if idleSeconds >= Double(settings.afkTimeout) {
             let idleInt = Int(idleSeconds)
             elapsedSeconds = max(0, elapsedSeconds - idleInt)
-            startRest(offset: Double(Self.afkTimeout))
+            startRest(offset: Double(settings.afkTimeout))
         }
     }
 
@@ -181,7 +179,7 @@ class TrackerTimer: ObservableObject {
             CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: $0)
         }.min() ?? .infinity
         guard idleSeconds < 2 else { return }
-        if elapsedSeconds >= Self.maxRestDuration {
+        if elapsedSeconds >= settings.maxRestDuration {
             flashRestToWork = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 self?.flashRestToWork = false
@@ -196,8 +194,8 @@ class TrackerTimer: ObservableObject {
     }
 
     private func checkBreakReminder() {
-        guard mode == .work, elapsedSeconds >= Self.breakReminderAt else { return }
-        let pastThreshold = elapsedSeconds - Self.breakReminderAt
+        guard mode == .work, elapsedSeconds >= settings.breakReminderAt else { return }
+        let pastThreshold = elapsedSeconds - settings.breakReminderAt
         let reminderMinute = pastThreshold / Self.breakReminderRepeat
         if reminderMinute != lastFlashMinute {
             lastFlashMinute = reminderMinute

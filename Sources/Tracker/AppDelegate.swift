@@ -51,6 +51,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.timer.stop()
+        }
+
         timer.$flashBreakReminder
             .receive(on: RunLoop.main)
             .filter { $0 }
