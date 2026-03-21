@@ -11,6 +11,7 @@ mkdir -p "$APP/Contents/Resources"
 
 cp .build/release/Tracker "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
+cp Sources/Tracker/Resources/AppIcon.icns "$APP/Contents/Resources/"
 
 # Copy bundled resources
 RESOURCES=".build/release/Tracker_Tracker.bundle"
