@@ -58,11 +58,11 @@ struct SettingsView: View {
                 .frame(height: 0.5)
 
             Spacer().frame(height: 8)
+            settingRow("AFK", value: $settings.afkTimeoutMinutes, unit: "MIN", range: 1...15, tip: "SWITCH TO REST AFTER NO INPUT FOR")
+            Spacer().frame(height: 6)
             settingRow("REST REMINDER", value: $settings.breakReminderMinutes, unit: "MIN", range: 5...60, tip: "WORK TIME BEFORE BREAK NUDGES START")
             Spacer().frame(height: 6)
             settingRow("REST MIN", value: $settings.restDurationMinutes, unit: "MIN", range: 1...30, tip: "SWITCH TO WORK ON ANY INPUT AFTER")
-            Spacer().frame(height: 6)
-            settingRow("AFK", value: $settings.afkTimeoutMinutes, unit: "MIN", range: 1...15, tip: "SWITCH TO REST AFTER NO INPUT FOR")
 
             Spacer()
 
