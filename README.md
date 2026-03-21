@@ -1,11 +1,6 @@
 # CYCLE
 
-A macOS menubar timer for tracking work and rest. Built around the idea that making time visible is more useful than enforcing schedules.
-
-## Concept
-
-Traditional timers count down and tell you when to stop. CYCLE counts up and lets you decide. It sits in your menubar, quietly accumulating your work time as a visual reward signal. When you've been going too long, it nudges you -- gently at first, then harder.
-
+A macOS menubar timer that counts up, not down. When you've been WORKing too long, it nudges you - gently at first, then harder.
 
 ## How It Works
 
@@ -28,13 +23,11 @@ You switch into rest manually. When you start moving again, it notices and switc
 
 You only need to do this once.
 
-## Tech
+## Build from source
 
-Swift, AppKit + SwiftUI, zero dependencies. Builds with Swift Package Manager.
+Swift, AppKit + SwiftUI, zero dependencies. Requires macOS 14+.
 
 ```
 swift build
 .build/debug/Tracker
 ```
-
-Requires macOS 14+.
