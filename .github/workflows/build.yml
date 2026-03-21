@@ -26,10 +26,6 @@ jobs:
       - name: Zip app
         run: zip -r Cycle-${{ steps.version.outputs.version }}.zip Cycle.app
 
-      - name: Get SHA256
-        id: sha
-        run: echo "sha256=$(shasum -a 256 Cycle-${{ steps.version.outputs.version }}.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
-
       - name: Create release
         uses: softprops/action-gh-release@v2
         env:
@@ -39,36 +35,3 @@ jobs:
           name: Cycle ${{ steps.version.outputs.version }}
           files: Cycle-${{ steps.version.outputs.version }}.zip
           make_latest: true
-
-      - name: Update Homebrew tap
-        env:
-          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
-        run: |
-          if [ -z "$TAP_DEPLOY_KEY" ]; then
-            echo "TAP_DEPLOY_KEY not set, skipping tap update"
-            exit 0
-          fi
-          mkdir -p ~/.ssh
-          echo "$TAP_DEPLOY_KEY" > ~/.ssh/tap_key
-          chmod 600 ~/.ssh/tap_key
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/tap_key -o StrictHostKeyChecking=no"
-          git clone git@github.com:saint-angels/homebrew-tap.git /tmp/homebrew-tap
-          cat > /tmp/homebrew-tap/Casks/cycle.rb << CASK
-          cask "cycle" do
-            version "${{ steps.version.outputs.version }}"
-            sha256 "${{ steps.sha.outputs.sha256 }}"
-
-            url "https://github.com/saint-angels/CYCLE/releases/download/v#{version}/Cycle-#{version}.zip"
-            name "Cycle"
-            desc "macOS menubar timer for tracking work and rest"
-            homepage "https://github.com/saint-angels/CYCLE"
-
-            app "Cycle.app"
-          end
-          CASK
-          cd /tmp/homebrew-tap
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add -A
-          git diff --cached --quiet || git commit -m "update cycle to ${{ steps.version.outputs.version }}"
-          git push
