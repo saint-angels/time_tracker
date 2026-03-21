@@ -3,8 +3,9 @@ name: Build
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -18,8 +19,17 @@ jobs:
       - name: Bundle app
         run: bash bundle.sh
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Zip app
+        run: zip -r Cycle.zip Cycle.app
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
         with:
-          name: Cycle.app
-          path: Cycle.app
+          tag_name: build-${{ steps.sha.outputs.short }}
+          name: Build ${{ steps.sha.outputs.short }}
+          files: Cycle.zip
+          make_latest: true
