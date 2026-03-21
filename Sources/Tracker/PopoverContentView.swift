@@ -126,13 +126,15 @@ struct PopoverContentView: View {
                     shakeOffsetY = 0
                 }
             }
-            keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                if event.keyCode == 49 { timer.timeMultiplier = 300.0; return nil }
-                return event
-            }
-            keyUpMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
-                if event.keyCode == 49 { timer.timeMultiplier = 1.0; return nil }
-                return event
+            if CommandLine.arguments.contains("-debug") {
+                keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    if event.keyCode == 49 { timer.timeMultiplier = 300.0; return nil }
+                    return event
+                }
+                keyUpMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
+                    if event.keyCode == 49 { timer.timeMultiplier = 1.0; return nil }
+                    return event
+                }
             }
         }
         .onDisappear {
