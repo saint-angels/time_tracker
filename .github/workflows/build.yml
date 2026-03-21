@@ -13,6 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Read version
+        id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+
       - name: Build
         run: swift build -c release
 
@@ -20,18 +24,14 @@ jobs:
         run: bash bundle.sh
 
       - name: Zip app
-        run: zip -r Cycle.zip Cycle.app
-
-      - name: Get short SHA
-        id: sha
-        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        run: zip -r Cycle-${{ steps.version.outputs.version }}.zip Cycle.app
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
-          tag_name: build-${{ steps.sha.outputs.short }}
-          name: Build ${{ steps.sha.outputs.short }}
-          files: Cycle.zip
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Cycle ${{ steps.version.outputs.version }}
+          files: Cycle-${{ steps.version.outputs.version }}.zip
           make_latest: true
