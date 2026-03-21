@@ -19,4 +19,7 @@ if [ -d "$RESOURCES" ]; then
     cp -R "$RESOURCES" "$APP/Contents/Resources/"
 fi
 
+# Ad-hoc sign to prevent "damaged" error on downloaded builds
+codesign --force --deep -s - "$APP"
+
 echo "Built $APP"
